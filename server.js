@@ -28,25 +28,65 @@ app.post('/check-plagiarism', async (req, res) => {
             return res.status(400).json({ error: 'Text is required' });
         }
 
-        // Assuming the API endpoint based on common patterns
-        // This might need adjustment based on actual API documentation
-        const response = await axios.post('https://api.plagiarismchecker.org/check', {
-            text: text,
-            api_key: API_KEY
-        }, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        // Try different possible API endpoints and formats
+        const endpoints = [
+            'https://api.plagiarismchecker.org/check',
+            'https://www.plagiarismchecker.org/api/check',
+            'https://plagiarismchecker.org/api/v1/check'
+        ];
 
-        // Process the response
-        const result = response.data;
+        let result = null;
+        let lastError = null;
+
+        for (const endpoint of endpoints) {
+            try {
+                console.log(`Trying endpoint: ${endpoint}`);
+
+                // Try different request formats
+                const requestFormats = [
+                    { text: text, api_key: API_KEY },
+                    { text: text, key: API_KEY },
+                    { content: text, api_key: API_KEY },
+                    { content: text, key: API_KEY }
+                ];
+
+                for (const format of requestFormats) {
+                    try {
+                        const response = await axios.post(endpoint, format, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${API_KEY}`,
+                                'X-API-Key': API_KEY
+                            },
+                            timeout: 10000
+                        });
+
+                        result = response.data;
+                        console.log('Success with format:', format);
+                        break;
+                    } catch (formatError) {
+                        console.log(`Format failed:`, formatError.message);
+                        lastError = formatError;
+                    }
+                }
+
+                if (result) break;
+
+            } catch (endpointError) {
+                console.log(`Endpoint ${endpoint} failed:`, endpointError.message);
+                lastError = endpointError;
+            }
+        }
+
+        if (!result) {
+            throw lastError || new Error('All API endpoints failed');
+        }
 
         // Format the response for our frontend
         const formattedResult = {
-            plagiarism_percentage: result.plagiarism_percentage || result.percentage,
-            sources: result.sources || [],
-            details: result.details || 'Plagiarism check completed'
+            plagiarism_percentage: result.plagiarism_percentage || result.percentage || result.score || 0,
+            sources: result.sources || result.matches || [],
+            details: result.details || result.message || 'Plagiarism check completed'
         };
 
         res.json(formattedResult);
@@ -58,7 +98,7 @@ app.post('/check-plagiarism', async (req, res) => {
         if (error.response) {
             // API returned an error
             res.status(error.response.status).json({
-                error: error.response.data.message || 'API error'
+                error: error.response.data.message || error.response.data.error || 'API error'
             });
         } else if (error.request) {
             // Network error
