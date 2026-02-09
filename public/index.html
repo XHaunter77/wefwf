@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plagiarism Checker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Plagiarism Checker</h1>
+        <div class="form-group">
+            <label for="text-input">Enter text to check for plagiarism:</label>
+            <textarea id="text-input" rows="10" placeholder="Paste your text here..."></textarea>
+        </div>
+        <button id="check-btn">Check Plagiarism</button>
+        <div id="results" class="results hidden">
+            <h2>Results</h2>
+            <div id="result-content"></div>
+        </div>
+        <div id="loading" class="loading hidden">Checking plagiarism...</div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
